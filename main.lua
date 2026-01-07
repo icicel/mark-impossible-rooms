@@ -180,14 +180,8 @@ function MIR:AddImpossibleRoom(pos)
 		ID = pos.X.."-"..pos.Y,
 		Position = pos,
 		Shape = "ImpossibleRoom",
-		Type = 1, -- ROOM_DEFAULT
-		DisplayFlags = 5,
-		Descriptor = {
-			Data = {
-				Doors = 0
-			},
-			DisplayFlags = 5
-		}
+		Type = RoomType.ROOM_DEFAULT,
+		DisplayFlags = 5
 	})
 	MIR:Log("\nAdded {"..pos.X..", "..pos.Y.."}")
 end
@@ -207,14 +201,8 @@ function MIR:GuessSecretRoom()
 				ID = neighborPos.X.."-"..neighborPos.Y,
 				Position = neighborPos,
 				Shape = "SecretGuess",
-				Type = RoomType.ROOM_SECRET,
-				DisplayFlags = 5,
-				Descriptor = {
-					Data = {
-						Doors = 0
-					},
-					DisplayFlags = 5
-				}
+				Type = RoomType.ROOM_DEFAULT,
+				DisplayFlags = 5
 			})
 			table.insert(MIR.CurrentGuesses, newRoom)
 			MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
