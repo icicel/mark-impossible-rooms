@@ -170,10 +170,19 @@ end
 function MIR:AddImpossibleRoom(pos)
 	local stage = Game():GetLevel():GetStage()
 
-	if not MinimapAPI:IsPositionFree(pos)
-	or (stage == LevelStage.STAGE2_2 and MinimapAPI.CurrentDimension == 1) -- knife piece 2
+	if (stage == LevelStage.STAGE2_2 and MinimapAPI.CurrentDimension == 1) -- knife piece 2
 	or stage == LevelStage.STAGE8 then -- home
 		return
+	end
+
+	if not MinimapAPI:IsPositionFree(pos) then
+		local existingRoom = MinimapAPI:GetRoomAtPosition(pos)
+		if existingRoom.Shape == "SecretGuess" or existingRoom.Shape == "SuperSecretGuess" or existingRoom.Shape == "UltraSecretGuess" then
+			existingRoom:Remove()
+			MIR:Log("\nReplaced {"..pos.X..", "..pos.Y.."}")
+		else
+			return
+		end
 	end
 
 	MinimapAPI:AddRoom({
