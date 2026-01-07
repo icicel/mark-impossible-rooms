@@ -4,47 +4,52 @@ function MIR:Log(msg)
 	--Isaac.ConsoleOutput(msg)
 end
 
--- Adds the "impossible room" sprite.
-MIR.ImpossibleRoomSpriteSmall = Sprite()
-MIR.ImpossibleRoomSpriteSmall:Load("gfx/ui/impossible_small.anm2", true)
-MIR.ImpossibleRoomSpriteLarge = Sprite()
-MIR.ImpossibleRoomSpriteLarge:Load("gfx/ui/impossible_large.anm2", true)
-MIR.ImpossibleRoomAnimationSmall = {
-	sprite = MIR.ImpossibleRoomSpriteSmall,
-	anim = "Default",
-	frame = 0
-}
-MIR.ImpossibleRoomAnimationLarge = {
-	sprite = MIR.ImpossibleRoomSpriteLarge,
-	anim = "Default",
-	frame = 0
-}
-
-if MinimapAPI then
-	MinimapAPI:AddRoomShape(
-		"ImpossibleRoom",
-		{
-			RoomUnvisited = MIR.ImpossibleRoomAnimationSmall,
-			RoomVisited = MIR.ImpossibleRoomAnimationSmall,
-			RoomCurrent = MIR.ImpossibleRoomAnimationSmall,
-			RoomSemivisited = MIR.ImpossibleRoomAnimationSmall
-		},
-		{
-			RoomUnvisited = MIR.ImpossibleRoomAnimationLarge,
-			RoomVisited = MIR.ImpossibleRoomAnimationLarge,
-			RoomCurrent = MIR.ImpossibleRoomAnimationLarge,
-			RoomSemivisited = MIR.ImpossibleRoomAnimationLarge
-		},
-		Vector(0, 0),
-		Vector(1, 1),
-		{Vector(0, 0)},
-		{Vector(0, 0)},
-		Vector(0, 0),
-		{Vector(0.25, 0.25)},
-		Vector(0.25, 0.25),
-		{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1)}
-	)
+-- Load custom room shapes
+function MIR:CreateRoomShape(id, spriteSmallPath, spriteLargePath)
+	local spriteSmall = Sprite()
+	spriteSmall:Load(spriteSmallPath, true)
+	local spriteLarge = Sprite()
+	spriteLarge:Load(spriteLargePath, true)
+	local animationSmall = {
+		sprite = spriteSmall,
+		anim = "Default",
+		frame = 0
+	}
+	local animationLarge = {
+		sprite = spriteLarge,
+		anim = "Default",
+		frame = 0
+	}
+	if MinimapAPI then
+		MinimapAPI:AddRoomShape(
+			id,
+			{
+				RoomUnvisited = animationSmall,
+				RoomVisited = animationSmall,
+				RoomCurrent = animationSmall,
+				RoomSemivisited = animationSmall
+			},
+			{
+				RoomUnvisited = animationLarge,
+				RoomVisited = animationLarge,
+				RoomCurrent = animationLarge,
+				RoomSemivisited = animationLarge
+			},
+			Vector(0, 0),
+			Vector(1, 1),
+			{Vector(0, 0)},
+			{Vector(0, 0)},
+			Vector(0, 0),
+			{Vector(0.25, 0.25)},
+			Vector(0.25, 0.25),
+			{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1)}
+		)
+	end
 end
+MIR:CreateRoomShape("ImpossibleRoom", "gfx/ui/impossible_small.anm2", "gfx/ui/impossible_large.anm2")
+MIR:CreateRoomShape("SecretGuessRoom", "gfx/ui/secret_guess_small.anm2", "gfx/ui/secret_guess_large.anm2")
+MIR:CreateRoomShape("SuperSecretGuessRoom", "gfx/ui/super_secret_guess_small.anm2", "gfx/ui/super_secret_guess_large.anm2")
+MIR:CreateRoomShape("UltraSecretGuessRoom", "gfx/ui/ultra_secret_guess_small.anm2", "gfx/ui/ultra_secret_guess_large.anm2")
 
 -- Relative location of adjacent rooms by room shape and doorslot
 -- https://wofsauge.github.io/IsaacDocs/rep/enums/RoomShape.html
