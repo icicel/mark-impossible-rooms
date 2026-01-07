@@ -46,10 +46,9 @@ if MinimapAPI then
 	)
 end
 
+-- Relative location of adjacent rooms by room shape and doorslot
+-- https://wofsauge.github.io/IsaacDocs/rep/enums/RoomShape.html
 MIR.DoorTable = {
-	-- Lists location of adjacent rooms by room shape and doorslot
-	-- https://wofsauge.github.io/IsaacDocs/rep/enums/RoomShape.html
-
 	-- 1x1
 	{{-1, 0}, {0, -1}, {1, 0}, {0, 1}, "nil", "nil", "nil", "nil"},
 	-- 1x1 horizontal corridor
@@ -66,13 +65,13 @@ MIR.DoorTable = {
 	{{-1, 0}, {0, -1}, {2, 0}, {0, 1}, "nil", {1, -1}, "nil", {1, 1}},
 	-- 2x2
 	{{-1, 0}, {0, -1}, {2, 0}, {0, 2}, {-1, 1}, {1, -1}, {2, 1}, {1, 2}},
-	-- lower right L shape
+	-- lower right L shape (▟)
     {{-1, 0}, {-1, 0}, {1, 0}, {-1, 2}, {-2, 1}, {0, -1}, {1, 1}, {0, 2}},
-	-- lower left L shape
+	-- lower left L shape (▙)
     {{-1, 0}, {0, -1}, {1, 0}, {0, 2}, {-1, 1}, {1, 0}, {2, 1}, {1, 2}},
-	-- upper right L shape
+	-- upper right L shape (▜)
 	{{-1, 0}, {0, -1}, {2, 0}, {0, 1}, {0, 1}, {1, -1}, {2, 1}, {1, 2}},
-	-- upper left L shape
+	-- upper left L shape (▛)
 	{{-1, 0}, {0, -1}, {2, 0}, {0, 2}, {-1, 1}, {1, -1}, {1, 1}, {1, 1}}
 }
 
@@ -81,6 +80,7 @@ MIR.DoorTable = {
 
 
 
+-- Mark any impossible rooms neighboring the current room
 function MIR:CheckDoorSlots()
 	local room = MinimapAPI:GetCurrentRoom()
 	if room == nil then
@@ -118,6 +118,7 @@ function MIR:CheckDoorSlots()
 	MIR:Log("\nFinished checking rooms\n")
 end
 
+-- Mark impossible rooms on a more global level
 function MIR:CheckAllRooms()
 	for _,room in ipairs(MinimapAPI:GetLevel()) do
 		local stage = Game():GetLevel():GetStage()
@@ -174,7 +175,7 @@ function MIR:AddImpossibleRoom(pos)
 		ID = pos.X.."-"..pos.Y,
 		Position = pos,
 		Shape = "ImpossibleRoom",
-		Type = 1,
+		Type = 1, -- ROOM_DEFAULT
 		DisplayFlags = 5,
 		Descriptor = {
 			Data = {
