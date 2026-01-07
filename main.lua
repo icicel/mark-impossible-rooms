@@ -196,13 +196,14 @@ function MIR:GuessSecretRoom()
 
 	-- placeholder
 	for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
-		if MinimapAPI:IsPositionFree(neighborPos) then
+		if MinimapAPI:IsPositionFree(neighborPos) or MinimapAPI:GetRoomAtPosition(neighborPos):GetDisplayFlags() == 0 then
 			local newRoom = MinimapAPI:AddRoom({
 				ID = neighborPos.X.."-"..neighborPos.Y,
 				Position = neighborPos,
 				Shape = "SecretGuess",
 				Type = RoomType.ROOM_DEFAULT,
-				DisplayFlags = 5
+				DisplayFlags = 5,
+				AllowRoomOverlap = true -- can overlap with unrevealed secret rooms (will be overwritten when revealed)
 			})
 			table.insert(MIR.CurrentGuesses, newRoom)
 			MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
