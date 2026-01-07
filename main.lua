@@ -203,7 +203,7 @@ function MIR:GuessSecretRoom()
 	-- placeholder
 	for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
 		if MinimapAPI:IsPositionFree(neighborPos) then
-			MinimapAPI:AddRoom({
+			local newRoom = MinimapAPI:AddRoom({
 				ID = neighborPos.X.."-"..neighborPos.Y,
 				Position = neighborPos,
 				Shape = "SecretGuess",
@@ -216,6 +216,7 @@ function MIR:GuessSecretRoom()
 					DisplayFlags = 5
 				}
 			})
+			table.insert(MIR.CurrentGuesses, newRoom)
 			MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
 		end
 	end
@@ -230,42 +231,35 @@ function MIR:GuessUltraSecretRoom()
 end
 
 function MIR:ClearGuesses()
-	for _,room in ipairs(MinimapAPI:GetLevel()) do
-		if room.Shape == "SecretGuess" or room.Shape == "SuperSecretGuess" or room.Shape == "UltraSecretGuess" then
-			room:Remove()
-			MIR:Log("\nRemoved {"..room.Position.X..", "..room.Position.Y.."}")
-		end
+	for _,room in ipairs(MIR.CurrentGuesses) do
+		room:Remove()
+		MIR:Log("\nRemoved {"..room.Position.X..", "..room.Position.Y.."}")
 	end
+	MIR.CurrentGuesses = {}
 end
 
-MIR.ActiveGuesses = false
 -- Only one set of guesses should be active at a time
-function MIR:RunToggles()
+MIR.CurrentGuesses = {}
+function MIR:ToggleGuesses()
 	if Input.IsButtonTriggered(Keyboard.KEY_T, 0) then
-		if MIR.ActiveGuesses then
+		if #MIR.CurrentGuesses > 0 then
 			MIR:ClearGuesses()
-			MIR.ActiveGuesses = false
 		else
 			MIR:GuessSecretRoom()
-			MIR.ActiveGuesses = true
 		end
 	end
 	if Input.IsButtonTriggered(Keyboard.KEY_Y, 0) then
-		if MIR.ActiveGuesses then
+		if #MIR.CurrentGuesses > 0 then
 			MIR:ClearGuesses()
-			MIR.ActiveGuesses = false
 		else
 			MIR:GuessSuperSecretRoom()
-			MIR.ActiveGuesses = true
 		end
 	end
 	if Input.IsButtonTriggered(Keyboard.KEY_U, 0) then
-		if MIR.ActiveGuesses then
+		if #MIR.CurrentGuesses > 0 then
 			MIR:ClearGuesses()
-			MIR.ActiveGuesses = false
 		else
 			MIR:GuessUltraSecretRoom()
-			MIR.ActiveGuesses = true
 		end
 	end
 end
@@ -279,5 +273,5 @@ if MinimapAPI then
 	MIR:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, MIR.CheckDoorSlots)
 	MIR:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, MIR.CheckAllRooms)
 	MIR:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, MIR.CheckAllRooms)
-	MIR:AddCallback(ModCallbacks.MC_INPUT_ACTION, MIR.RunToggles)
+	MIR:AddCallback(ModCallbacks.MC_POST_RENDER, MIR.ToggleGuesses)
 end
