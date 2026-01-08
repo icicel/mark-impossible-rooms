@@ -55,29 +55,29 @@ MIR:CreateRoomShape("UltraSecretGuess", "gfx/ui/ultra_secret_guess_small.anm2", 
 -- https://wofsauge.github.io/IsaacDocs/rep/enums/RoomShape.html
 MIR.DoorTable = {
 	-- 1x1
-	{{-1, 0}, {0, -1}, {1, 0}, {0, 1}, "nil", "nil", "nil", "nil"},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1), "nil", "nil", "nil", "nil"},
 	-- 1x1 horizontal corridor
-	{{-1, 0}, {0, -1}, {1, 0}, {0, 1}, "nil", "nil", "nil", "nil"},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1), "nil", "nil", "nil", "nil"},
 	-- 1x1 vertical corridor
-	{{-1, 0}, {0, -1}, {1, 0}, {0, 1}, "nil", "nil", "nil", "nil"},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1), "nil", "nil", "nil", "nil"},
 	-- 2x1 vertical
-	{{-1, 0}, {0, -1}, {1, 0}, {0, 2}, {-1, 1}, "nil", {1, 1}, "nil"},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 2), Vector(-1, 1), "nil", Vector(1, 1), "nil"},
 	-- 2x1 vertical corridor
-	{{-1, 0}, {0, -1}, {1, 0}, {0, 2}, {-1, 1}, "nil", {1, 1}, "nil"},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 2), Vector(-1, 1), "nil", Vector(1, 1), "nil"},
 	-- 2x1 horizontal
-	{{-1, 0}, {0, -1}, {2, 0}, {0, 1}, "nil", {1, -1}, "nil", {1, 1}},
+	{Vector(-1, 0), Vector(0, -1), Vector(2, 0), Vector(0, 1), "nil", Vector(1, -1), "nil", Vector(1, 1)},
 	-- 2x1 horizontal corridor
-	{{-1, 0}, {0, -1}, {2, 0}, {0, 1}, "nil", {1, -1}, "nil", {1, 1}},
+	{Vector(-1, 0), Vector(0, -1), Vector(2, 0), Vector(0, 1), "nil", Vector(1, -1), "nil", Vector(1, 1)},
 	-- 2x2
-	{{-1, 0}, {0, -1}, {2, 0}, {0, 2}, {-1, 1}, {1, -1}, {2, 1}, {1, 2}},
+	{Vector(-1, 0), Vector(0, -1), Vector(2, 0), Vector(0, 2), Vector(-1, 1), Vector(1, -1), Vector(2, 1), Vector(1, 2)},
 	-- lower right L shape (▟)
-    {{-1, 0}, {-1, 0}, {1, 0}, {-1, 2}, {-2, 1}, {0, -1}, {1, 1}, {0, 2}},
+	{Vector(-1, 0), Vector(-1, 0), Vector(1, 0), Vector(-1, 2), Vector(-2, 1), Vector(0, -1), Vector(1, 1), Vector(0, 2)},
 	-- lower left L shape (▙)
-    {{-1, 0}, {0, -1}, {1, 0}, {0, 2}, {-1, 1}, {1, 0}, {2, 1}, {1, 2}},
+	{Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 2), Vector(-1, 1), Vector(1, 0), Vector(2, 1), Vector(1, 2)},
 	-- upper right L shape (▜)
-	{{-1, 0}, {0, -1}, {2, 0}, {0, 1}, {0, 1}, {1, -1}, {2, 1}, {1, 2}},
+	{Vector(-1, 0), Vector(0, -1), Vector(2, 0), Vector(0, 1), Vector(0, 1), Vector(1, -1), Vector(2, 1), Vector(1, 2)},
 	-- upper left L shape (▛)
-	{{-1, 0}, {0, -1}, {2, 0}, {0, 2}, {-1, 1}, {1, -1}, {1, 1}, {1, 1}}
+	{Vector(-1, 0), Vector(0, -1), Vector(2, 0), Vector(0, 2), Vector(-1, 1), Vector(1, -1), Vector(1, 1), Vector(1, 1)}
 }
 
 
@@ -87,26 +87,31 @@ MIR.DoorTable = {
 --== Room Helper Functions ==--
 
 
--- MinimapAPI already has GetAdjacentRooms(), but this returns coordinate vectors instead of room objects
-function MIR:GetNeighborVectors(pos, shape)
+-- Find all possible adjacent rooms
+-- MinimapAPI already has GetAdjacentRooms(), but this returns coordinates instead of room objects
+function MIR:GetNeighborVectors(room)
+	return MIR:GetNeighborVectorsOfPosition(room.Position, room.Shape)
+end
+
+function MIR:GetNeighborVectorsOfPosition(pos, shape)
 	local neighbors = {}
-	for _,v in ipairs(MIR.DoorTable[shape]) do
-		if v ~= "nil" then
-			table.insert(neighbors, Vector(pos.X + v[1], pos.Y + v[2]))
+	for _,delta in ipairs(MIR.DoorTable[shape]) do
+		if delta ~= "nil" then
+			MIR:Log("\nNeighbor delta: {"..delta.X..", "..delta.Y.."}")
+			table.insert(neighbors, pos + delta)
 		end
 	end
 	return neighbors
 end
 
+-- Return number of visible rooms adjacent to a given position
 function MIR:CountAdjacentVisibleRooms(pos)
 	local count = 0
-	for _,neighborPos in ipairs(MIR.DoorTable[1]) do
-		if neighborPos ~= "nil" then
-			local adjacentRoom = MinimapAPI:GetRoomAtPosition(Vector(pos.X + neighborPos[1], pos.Y + neighborPos[2]))
-			if adjacentRoom then
-				if adjacentRoom:IsVisible() then
-					count = count + 1
-				end
+	for _,neighborPos in ipairs(MIR:GetNeighborVectorsOfPosition(pos, RoomShape.ROOMSHAPE_1x1)) do
+		local adjacentRoom = MinimapAPI:GetRoomAtPosition(neighborPos)
+		if adjacentRoom then
+			if adjacentRoom:IsVisible() and adjacentRoom.Type ~= RoomType.ROOM_NULL then
+				count = count + 1
 			end
 		end
 	end
@@ -155,28 +160,26 @@ function MIR:CheckDoorSlots()
 		return
 	end
 
-	local pos = room.Position -- vector
-	local shape = room.Shape
 	local validDoors = room.Descriptor.Data.Doors -- bitmap of what entrances are valid
-	local neighborPos_s = MIR:GetNeighborVectors(pos, shape)
+	local neighborVectors = MIR:GetNeighborVectors(room)
 
-	MIR:Log("\nShape: "..shape..", bitmap: "..validDoors..", coords: "..pos.X..", "..pos.Y.."\nNeighbors:")
-	for _,v in ipairs(neighborPos_s) do MIR:Log(" {"..v.X..", "..v.Y.."}") end
+	MIR:Log("\nShape: "..room.Shape..", bitmap: "..validDoors..", coords: "..room.Position.X..", "..room.Position.Y.."\nNeighbors:")
+	for _,neighborPos in ipairs(neighborVectors) do MIR:Log(" {"..neighborPos.X..", "..neighborPos.Y.."}") end
 	MIR:Log("\nChecking rooms...")
 
 	-- Get invalid entrances to neighboring rooms
 	for n=0,7 do
 		if validDoors & 1 << n == 0 then
-			local delta = MIR.DoorTable[shape][n+1]
+			local delta = MIR.DoorTable[room.Shape][n+1]
 			if delta ~= "nil" then
-				local invalidPos = Vector(pos.X + delta[1], pos.Y + delta[2])
+				local invalidPos = room.Position + delta
 				MIR:AddImpossibleRoom(invalidPos)
 			end
 		end
 	end
 
 	-- Loop through all adjacent room vectors
-	for _,neighborPos in ipairs(neighborPos_s) do
+	for _,neighborPos in ipairs(neighborVectors) do
 		-- Check if the neighbor is outside the floor grid (13x13)
 		if neighborPos.X < 0 or neighborPos.Y < 0 or neighborPos.X > 12 or neighborPos.Y > 12 then
 			MIR:AddImpossibleRoom(neighborPos)
@@ -194,21 +197,21 @@ function MIR:CheckAllRooms()
 		-- add all neighbors if boss room
 		-- is straight up disabled in void (for now) because wacky behavior with delirium's boss room
 		if room.Type == RoomType.ROOM_BOSS and room:IsIconVisible() and stage ~= LevelStage.STAGE7 then
-			for _,neighborPos in ipairs(MIR:GetNeighborVectors(room.Position, room.Shape)) do
+			for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
 				MIR:AddImpossibleRoom(neighborPos)
 			end
 
 		elseif room:IsVisible() then
 			-- add neighbors to the left and right if vertical corridor
 			if room.Shape == RoomShape.ROOMSHAPE_IV or room.Shape == RoomShape.ROOMSHAPE_IIV then
-				for _,neighborPos in ipairs(MIR:GetNeighborVectors(room.Position, room.Shape)) do
+				for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
 					if neighborPos.X ~= room.Position.X then
 						MIR:AddImpossibleRoom(neighborPos)
 					end
 				end
 			-- add neighbors above and below if horizontal corridor
 			elseif room.Shape == RoomShape.ROOMSHAPE_IH or room.Shape == RoomShape.ROOMSHAPE_IIH then
-				for _,neighborPos in ipairs(MIR:GetNeighborVectors(room.Position, room.Shape)) do
+				for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
 					if neighborPos.Y ~= room.Position.Y then
 						MIR:AddImpossibleRoom(neighborPos)
 					end
