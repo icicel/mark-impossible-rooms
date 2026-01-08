@@ -84,6 +84,69 @@ MIR.DoorTable = {
 
 
 
+--== Room Helper Functions ==--
+
+
+-- MinimapAPI already has GetAdjacentRooms(), but this returns coordinate vectors instead of room objects
+function MIR:GetNeighborVectors(pos, shape)
+	local neighbors = {}
+	for _,v in ipairs(MIR.DoorTable[shape]) do
+		if v ~= "nil" then
+			table.insert(neighbors, Vector(pos.X + v[1], pos.Y + v[2]))
+		end
+	end
+	return neighbors
+end
+
+function MIR:CountAdjacentVisibleRooms(pos)
+	local count = 0
+	for _,neighborPos in ipairs(MIR.DoorTable[1]) do
+		if neighborPos ~= "nil" then
+			local adjacentRoom = MinimapAPI:GetRoomAtPosition(Vector(pos.X + neighborPos[1], pos.Y + neighborPos[2]))
+			if adjacentRoom then
+				if adjacentRoom:IsVisible() then
+					count = count + 1
+				end
+			end
+		end
+	end
+	return count
+end
+
+function MIR:AddImpossibleRoom(pos)
+	local stage = Game():GetLevel():GetStage()
+
+	if (stage == LevelStage.STAGE2_2 and MinimapAPI.CurrentDimension == 1) -- knife piece 2
+	or stage == LevelStage.STAGE8 then -- home
+		return
+	end
+
+	if not MinimapAPI:IsPositionFree(pos) then
+		local existingRoom = MinimapAPI:GetRoomAtPosition(pos)
+		if existingRoom.Shape == "SecretGuess" or existingRoom.Shape == "SuperSecretGuess" or existingRoom.Shape == "UltraSecretGuess" then
+			existingRoom:Remove()
+			MIR:Log("\nReplaced {"..pos.X..", "..pos.Y.."}")
+		else
+			return
+		end
+	end
+
+	MinimapAPI:AddRoom({
+		ID = pos.X.."-"..pos.Y,
+		Position = pos,
+		Shape = "ImpossibleRoom",
+		Type = RoomType.ROOM_NULL,
+		DisplayFlags = 5
+	})
+	MIR:Log("\nAdded {"..pos.X..", "..pos.Y.."}")
+end
+
+
+
+
+
+--== Impossible Room Marking ==--
+
 
 -- Mark any impossible rooms neighboring the current room
 function MIR:CheckDoorSlots()
@@ -156,64 +219,12 @@ function MIR:CheckAllRooms()
 	end
 end
 
--- MinimapAPI already has GetAdjacentRooms(), but this returns coordinate vectors instead of room objects
-function MIR:GetNeighborVectors(pos, shape)
-	local neighbors = {}
-	for _,v in ipairs(MIR.DoorTable[shape]) do
-		if v ~= "nil" then
-			table.insert(neighbors, Vector(pos.X + v[1], pos.Y + v[2]))
-		end
-	end
-	return neighbors
-end
-
-function MIR:AddImpossibleRoom(pos)
-	local stage = Game():GetLevel():GetStage()
-
-	if (stage == LevelStage.STAGE2_2 and MinimapAPI.CurrentDimension == 1) -- knife piece 2
-	or stage == LevelStage.STAGE8 then -- home
-		return
-	end
-
-	if not MinimapAPI:IsPositionFree(pos) then
-		local existingRoom = MinimapAPI:GetRoomAtPosition(pos)
-		if existingRoom.Shape == "SecretGuess" or existingRoom.Shape == "SuperSecretGuess" or existingRoom.Shape == "UltraSecretGuess" then
-			existingRoom:Remove()
-			MIR:Log("\nReplaced {"..pos.X..", "..pos.Y.."}")
-		else
-			return
-		end
-	end
-
-	MinimapAPI:AddRoom({
-		ID = pos.X.."-"..pos.Y,
-		Position = pos,
-		Shape = "ImpossibleRoom",
-		Type = RoomType.ROOM_NULL,
-		DisplayFlags = 5
-	})
-	MIR:Log("\nAdded {"..pos.X..", "..pos.Y.."}")
-end
 
 
 
 
+--== Secret Room Guessing ==--
 
-
-function MIR:CountAdjacentVisibleRooms(pos)
-	local count = 0
-	for _,neighborPos in ipairs(MIR.DoorTable[1]) do
-		if neighborPos ~= "nil" then
-			local adjacentRoom = MinimapAPI:GetRoomAtPosition(Vector(pos.X + neighborPos[1], pos.Y + neighborPos[2]))
-			if adjacentRoom then
-				if adjacentRoom:IsVisible() then
-					count = count + 1
-				end
-			end
-		end
-	end
-	return count
-end
 
 -- Find possible secret room locations (empty spaces adjacent to 2-4 visible rooms)
 function MIR:GuessSecretRoom()
@@ -303,6 +314,8 @@ end
 
 
 
+
+--== Callbacks ==--
 
 
 if MinimapAPI then
