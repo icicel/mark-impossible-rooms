@@ -189,7 +189,7 @@ function MIR:AddImpossibleRoom(pos)
 		ID = pos.X.."-"..pos.Y,
 		Position = pos,
 		Shape = "ImpossibleRoom",
-		Type = RoomType.ROOM_DEFAULT,
+		Type = RoomType.ROOM_NULL,
 		DisplayFlags = 5
 	})
 	MIR:Log("\nAdded {"..pos.X..", "..pos.Y.."}")
@@ -200,6 +200,21 @@ end
 
 
 
+function MIR:CountAdjacentVisibleRooms(pos)
+	local count = 0
+	for _,neighborPos in ipairs(MIR.DoorTable[1]) do
+		if neighborPos ~= "nil" then
+			local adjacentRoom = MinimapAPI:GetRoomAtPosition(Vector(pos.X + neighborPos[1], pos.Y + neighborPos[2]))
+			if adjacentRoom then
+				if adjacentRoom:IsVisible() then
+					count = count + 1
+				end
+			end
+		end
+	end
+	return count
+end
+
 -- Find possible secret room locations (empty spaces adjacent to 2-4 visible rooms)
 function MIR:GuessSecretRoom()
 	for _,room in ipairs(MinimapAPI:GetLevel()) do
@@ -207,28 +222,37 @@ function MIR:GuessSecretRoom()
 		if not room:IsVisible() then
 			goto continue
 		end
-		-- shouldn't originate from other secret rooms
-		if room.Type == RoomType.ROOM_SECRET or room.Type == RoomType.ROOM_SUPERSECRET then
+		-- ignore special rooms
+		if room.Type ~= RoomType.ROOM_DEFAULT then
 			goto continue
 		end
-		-- shouldn't originate from red rooms
+		-- ignore red rooms
 		if room.Descriptor.Flags & RoomDescriptor.FLAG_RED_ROOM ~= 0 then
 			goto continue
 		end
 
 		for _,neighborPos in ipairs(MIR:GetNeighborVectors(room)) do
-			if MinimapAPI:IsPositionFree(neighborPos) or not MinimapAPI:GetRoomAtPosition(neighborPos):IsVisible() then
-				local newRoom = MinimapAPI:AddRoom({
-					ID = neighborPos.X.."-"..neighborPos.Y,
-					Position = neighborPos,
-					Shape = "SecretGuess",
-					Type = RoomType.ROOM_DEFAULT,
-					DisplayFlags = 5,
-					AllowRoomOverlap = true -- can overlap with unrevealed secret rooms (will be overwritten when revealed)
-				})
-				table.insert(MIR.CurrentGuesses, newRoom)
-				MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
+			-- spot occupied by visible room (invisible is fine)
+			if not MinimapAPI:IsPositionFree(neighborPos) then
+				if MinimapAPI:GetRoomAtPosition(neighborPos):IsVisible() then
+					goto continue
+				end
 			end
+			-- borders 2-4 rooms
+			if MIR:CountAdjacentVisibleRooms(neighborPos) < 2 then
+				goto continue
+			end
+
+			local newRoom = MinimapAPI:AddRoom({
+				ID = neighborPos.X.."-"..neighborPos.Y,
+				Position = neighborPos,
+				Shape = "SecretGuess",
+				Type = RoomType.ROOM_NULL,
+				DisplayFlags = 5,
+				AllowRoomOverlap = true -- can overlap with unrevealed secret rooms (will be overwritten when revealed)
+			})
+			table.insert(MIR.CurrentGuesses, newRoom)
+			MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
 		end
 		::continue:: -- ugh
 	end
