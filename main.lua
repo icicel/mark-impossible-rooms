@@ -246,12 +246,12 @@ function MIR:GuessSecretRoom()
 			-- spot occupied by visible room (invisible is fine)
 			if not MinimapAPI:IsPositionFree(neighborPos) then
 				if MinimapAPI:GetRoomAtPosition(neighborPos):IsVisible() then
-					goto continue
+					goto continue2
 				end
 			end
 			-- borders 2-4 rooms
 			if MIR:CountAdjacentVisibleRooms(neighborPos) < 2 then
-				goto continue
+				goto continue2
 			end
 
 			local newRoom = MinimapAPI:AddRoom({
@@ -264,6 +264,8 @@ function MIR:GuessSecretRoom()
 			})
 			table.insert(MIR.CurrentGuesses, newRoom)
 			MIR:Log("\nAdded SecretGuess {"..neighborPos.X..", "..neighborPos.Y.."}")
+
+			::continue2::
 		end
 		::continue:: -- ugh
 	end
